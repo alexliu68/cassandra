@@ -98,7 +98,7 @@ public class WordCountSetup
                           "   sub_category_id text," +
                           "   title  text," +
                           "   body  text," +
-                          "   PRIMARY KEY (user_id) ) ";
+                          "   PRIMARY KEY (user_id, category_id, sub_category_id) ) ";
 
         try
         {
