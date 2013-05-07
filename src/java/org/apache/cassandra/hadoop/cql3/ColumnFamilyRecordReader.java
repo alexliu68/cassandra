@@ -308,15 +308,16 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
             while (!iterator.hasNext())
             {
                 // no more data
-                if (index == -1)
+                if (index == -1 || emptyValues(partitionKeys))
                 {
                     logger.debug("no more data.");
                     return endOfData();
                 }
                     
                 // set last non-null key value to null
-                logger.debug("set tail to null");
+                
                 index = setTailNull(clusterKeys);
+                logger.debug("set tail to null, index: " + index);
                 iterator = executeQuery();
                 pageRows = 0;
                 
@@ -372,9 +373,6 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
                 
                 iterator = executeQuery();
                 pageRows = 0;
-                
-                if (iterator == null)
-                    return endOfData();
             }
 
             return Pair.create(keyColumns, valueColumns);
@@ -428,7 +426,7 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
         private int setTailNull(List<Key> values)
         {
             if (values.size() == 0)
-                return 0;
+                return -1;
             
             Iterator<Key> iterator = values.iterator();
             int previousIndex = -1;
@@ -495,7 +493,7 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
             else
             {
                 //query token(k) > token(pre_partition_key) and token(k) <= end_token
-                if (clusterKeys.get(0).value == null)
+                if (clusterKeys.size() == 0 || clusterKeys.get(0).value == null)
                     return Pair.create(1, 
                                        " WHERE token(" + partitionKeyString + ") > token(" + partitionKeyQuestions + ") "
                                        + " AND token(" + partitionKeyString + ") <= ?");
@@ -593,7 +591,7 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
                     values.add(partitionKey.next().value);
                 
                 //query token(k) > token(pre_partition_key) and token(k) <= end_token
-                if (clusterKeys.get(0).value == null)
+                if (clusterKeys.size() == 0 || clusterKeys.get(0).value == null)
                 {
                     values.add(partitioner.getTokenValidator().fromString(split.getEndToken()));
                     return Pair.create(1, values);

@@ -98,7 +98,7 @@ public class WordCountSetup
                           "   sub_category_id text," +
                           "   title  text," +
                           "   body  text," +
-                          "   PRIMARY KEY (user_id, category_id, sub_category_id) ) ";
+                          "   PRIMARY KEY (user_id) ) ";
 
         try
         {
@@ -177,13 +177,13 @@ public class WordCountSetup
         
         for (int i=1; i<5; i++)
         {         
-            for (int j=1; j<4; j++) 
+            for (int j=1; j<400; j++) 
             {
                 for (int k=1; k<4; k++)
                 {
                     List<ByteBuffer> values = new ArrayList<ByteBuffer>();
-                    values.add(ByteBufferUtil.bytes(String.valueOf(i)));
                     values.add(ByteBufferUtil.bytes(String.valueOf(j)));
+                    values.add(ByteBufferUtil.bytes(String.valueOf(i)));
                     values.add(ByteBufferUtil.bytes(String.valueOf(k)));
                     values.add(ByteBufferUtil.bytes(title[i]));
                     values.add(ByteBufferUtil.bytes(body[i]));

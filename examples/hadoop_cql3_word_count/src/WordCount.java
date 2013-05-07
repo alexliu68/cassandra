@@ -215,7 +215,7 @@ public class WordCount extends Configured implements Tool
         CQLConfigHelper.setInputCQLPageRowSize(job.getConfiguration(), "3");
         
         //this is the user defined filter clauses, you can comment it out if you want count all titles
-        CQLConfigHelper.setInputWhereClauses(job.getConfiguration(), "title='A'");
+        //CQLConfigHelper.setInputWhereClauses(job.getConfiguration(), "title='A'");
         
         job.waitForCompletion(true);
         return 0;
