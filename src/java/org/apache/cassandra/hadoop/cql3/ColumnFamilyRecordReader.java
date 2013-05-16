@@ -463,7 +463,9 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
                 // add keys in the front in order
                 String partitionKey = keyString(partitionKeys);               
                 String clusterKey = keyString(clusterKeys);
-                if ("".equals(clusterKey))
+                
+                columns = removeKeyColumns(columns);
+                if (clusterKey == null || "".equals(clusterKey))
                     columns = partitionKey + "," + columns;
                 else
                     columns = partitionKey + "," + clusterKey + "," + columns;
@@ -476,6 +478,38 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
                                + (userDefinedWhereClauses == null ? "" : " AND " + userDefinedWhereClauses)
                                + " LIMIT " + pageRowSize
                                + " ALLOW FILTERING");
+        }
+        
+        
+        /** remove key columns from the column string */
+        private String removeKeyColumns(String columnString)
+        {
+            Map<String, String> keys = new HashMap<String, String>();
+            
+            for (Key key: partitionKeys)
+                keys.put(key.name, "");
+            
+            if (clusterKeys != null && clusterKeys.size() > 0)
+            {
+                for (Key key: clusterKeys)
+                    keys.put(key.name, "");                
+            }
+
+            String [] columns = columnString.split(",");
+            String result = null;
+            boolean first = true;
+            for (String column : columns)
+            {
+                if (keys.get(column) != null)
+                    continue;
+                
+                if (first)
+                    result = column;
+                else
+                    result = result + "," + column;
+                first = false;
+            }
+            return result;           
         }
         
         /** compose the where clause */
@@ -638,11 +672,11 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
             }
             catch (InvalidRequestException e)
             {
-                logger.error("failed to perpared query " + query.right, e);
+                logger.error("failed to prepare query " + query.right, e);
             }
             catch (TException e)
             {
-                logger.error("failed to perpared query " + query.right, e);
+                logger.error("failed to prepare query " + query.right, e);
             }
             return -1;
         }
@@ -665,23 +699,23 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
             }
             catch (InvalidRequestException e)
             {
-                logger.error("failed to execute perpared query", e);
+                logger.error("failed to execute prepared query", e);
             }
             catch (UnavailableException e)
             {
-                logger.error("failed to execute perpared query", e);
+                logger.error("failed to execute prepared query", e);
             }
             catch (TimedOutException e)
             {
-                logger.error("failed to execute perpared query", e);
+                logger.error("failed to execute prepared query", e);
             }
             catch (SchemaDisagreementException e)
             {
-                logger.error("failed to execute perpared query", e);
+                logger.error("failed to execute prepared query", e);
             }
             catch (TException e)
             {
-                logger.error("failed to execute perpared query", e);
+                logger.error("failed to execute prepared query", e);
             }
             return null;
         }
