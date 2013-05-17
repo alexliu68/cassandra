@@ -110,6 +110,8 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
     private String userDefinedWhereClauses;
     
     private IPartitioner partitioner;
+    
+    private AbstractType<?> keyValidator;
 
     public ColumnFamilyRecordReader()
     {
@@ -523,7 +525,7 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
             //initial query token(k) >= start_token and token(k) <= end_token
             if (emptyValues(partitionKeys))
                 return Pair.create(0,
-                                   " WHERE token(" + partitionKeyString + ") >= ? AND token(" + partitionKeyString + ") <= ?");
+                                   " WHERE token(" + partitionKeyString + ") > ? AND token(" + partitionKeyString + ") <= ?");
             else
             {
                 //query token(k) > token(pre_partition_key) and token(k) <= end_token
@@ -686,6 +688,11 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
         {       
             Pair<Integer, List<ByteBuffer>> bindValues = preparedQueryBindValues();
             logger.debug("query type: " + bindValues.left);
+            
+            // check whether it reach end of range for type 1 query CASSANDRA-5573
+            if (bindValues.left == 1 && reachEndRange())
+                return null;
+            
             try
             {
                 CqlResult cqlResult = client.thriftClient.execute_prepared_cql3_query(
@@ -774,7 +781,7 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
         Column rawKeyValidator = cqlRow.columns.get(2);
         String validator = ByteBufferUtil.string(ByteBuffer.wrap(rawKeyValidator.getValue()));
         logger.debug("row key validator: " + validator);
-        AbstractType<?> keyValidator = parseType(validator);
+        keyValidator = parseType(validator);
         
         if (keyValidator instanceof CompositeType)
         {
@@ -786,6 +793,33 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
         else
             partitionKeys.get(0).validator = keyValidator;
 
+    }
+    
+    /** check whether current row is at the end of range*/
+    private boolean reachEndRange()
+    {
+        //current row key
+        ByteBuffer rowKey;               
+        if (keyValidator instanceof CompositeType)
+        {
+            ByteBuffer[] keys = new ByteBuffer[partitionKeys.size()];
+            for (int i=0; i<partitionKeys.size(); i++)
+                keys[i] = partitionKeys.get(i).value;
+            
+            rowKey = ((CompositeType) keyValidator).build(keys);
+        }
+        else
+        {
+            rowKey = partitionKeys.get(0).value;
+        }
+        
+        String endToken = split.getEndToken();
+        String currentToken = partitioner.getToken(rowKey).toString();
+        logger.debug("End token: " + endToken + ", current token: " + currentToken);
+        if (endToken.equals(currentToken))             
+            return true;
+        else
+            return false;
     }
     
     private AbstractType<?> parseType(String type) throws IOException
