@@ -798,6 +798,8 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
     /** check whether current row is at the end of range*/
     private boolean reachEndRange()
     {
+        for (Key k : partitionKeys) k.value.mark();
+        
         //current row key
         ByteBuffer rowKey;               
         if (keyValidator instanceof CompositeType)
@@ -816,6 +818,8 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
         String endToken = split.getEndToken();
         String currentToken = partitioner.getToken(rowKey).toString();
         logger.debug("End token: " + endToken + ", current token: " + currentToken);
+        
+        for (Key k : partitionKeys) k.value.reset();
         if (endToken.equals(currentToken))             
             return true;
         else
