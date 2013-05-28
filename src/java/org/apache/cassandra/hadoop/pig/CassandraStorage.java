@@ -77,6 +77,7 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
     public final static String PIG_ALLOW_DELETES = "PIG_ALLOW_DELETES";
     public final static String PIG_WIDEROW_INPUT = "PIG_WIDEROW_INPUT";
     public final static String PIG_USE_SECONDARY = "PIG_USE_SECONDARY";
+    public final static String PIG_INPUT_SPLIT_SIZE = "PIG_INPUT_SPLIT_SIZE";
 
     private final static String DEFAULT_INPUT_FORMAT = "org.apache.cassandra.hadoop.ColumnFamilyInputFormat";
     private final static String DEFAULT_OUTPUT_FORMAT = "org.apache.cassandra.hadoop.ColumnFamilyOutputFormat";
@@ -96,6 +97,7 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
     private String column_family;
     private String loadSignature;
     private String storeSignature;
+    private String splitSize;
 
     private Configuration conf;
     private RecordReader<ByteBuffer, Map<ByteBuffer, IColumn>> reader;
@@ -597,6 +599,17 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
             widerows = Boolean.valueOf(System.getenv(PIG_WIDEROW_INPUT));
         if (System.getenv(PIG_USE_SECONDARY) != null)
             usePartitionFilter = Boolean.valueOf(System.getenv(PIG_USE_SECONDARY));
+        if (System.getenv(PIG_INPUT_SPLIT_SIZE) != null)
+        {
+            try
+            {
+                ConfigHelper.setInputSplitSize(conf, Integer.valueOf(System.getenv(PIG_INPUT_SPLIT_SIZE)));
+            }
+            catch(NumberFormatException e)
+            {
+                throw new RuntimeException("PIG_INPUT_SPLIT_SIZE is not a number", e);
+            }           
+        }
 
         if (usePartitionFilter && getIndexExpressions() != null)
             ConfigHelper.setInputRange(conf, getIndexExpressions());
