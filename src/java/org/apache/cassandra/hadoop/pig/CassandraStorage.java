@@ -97,7 +97,6 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
     private String column_family;
     private String loadSignature;
     private String storeSignature;
-    private String splitSize;
 
     private Configuration conf;
     private RecordReader<ByteBuffer, Map<ByteBuffer, IColumn>> reader;
