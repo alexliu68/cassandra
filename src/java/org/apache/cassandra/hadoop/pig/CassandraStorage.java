@@ -582,6 +582,9 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
     public void setLocation(String location, Job job) throws IOException
     {
         conf = job.getConfiguration();
+        
+        // don't combine mappers to a single mapper per node
+        conf.setBoolean("pig.noSplitCombination", true);
         setLocationFromUri(location);
 
         if (ConfigHelper.getInputSlicePredicate(conf) == null)
