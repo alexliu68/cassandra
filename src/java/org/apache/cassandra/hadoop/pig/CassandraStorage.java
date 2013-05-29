@@ -106,6 +106,7 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
     private int limit;
     private boolean widerows = false;
     private boolean usePartitionFilter = false;
+    private int splitSize = 64 * 1024;
     // wide row hacks
     private ByteBuffer lastKey;
     private Map<ByteBuffer,IColumn> lastRow;
@@ -508,6 +509,8 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
                     widerows = Boolean.parseBoolean(urlQuery.get("widerows"));
                 if (urlQuery.containsKey("use_secondary"))
                     usePartitionFilter = Boolean.parseBoolean(urlQuery.get("use_secondary"));
+                if (urlQuery.containsKey("split_size"))
+                    splitSize = Integer.parseInt(urlQuery.get("split_size"));
             }
             String[] parts = urlParts[0].split("/+");
             String[] credentialsAndKeyspace = parts[1].split("@");
@@ -615,6 +618,9 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
 
         if (username != null && password != null)
             ConfigHelper.setInputKeyspaceUserNameAndPassword(conf, username, password);
+        
+        if (splitSize > 0)
+            ConfigHelper.setInputSplitSize(conf, splitSize);
 
         ConfigHelper.setInputColumnFamily(conf, keyspace, column_family, widerows);
         setConnectionInformation();
