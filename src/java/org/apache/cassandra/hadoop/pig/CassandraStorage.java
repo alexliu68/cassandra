@@ -104,6 +104,7 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
     private int limit;
     private boolean widerows = false;
     private boolean usePartitionFilter = false;
+    private int splitSize = 64 * 1024;
     // wide row hacks
     private ByteBuffer lastKey;
     private Map<ByteBuffer,Column> lastRow;
@@ -494,6 +495,8 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
                     widerows = Boolean.parseBoolean(urlQuery.get("widerows"));
                 if (urlQuery.containsKey("use_secondary"))
                     usePartitionFilter = Boolean.parseBoolean(urlQuery.get("use_secondary"));
+                if (urlQuery.containsKey("split_size"))
+                    splitSize = Integer.parseInt(urlQuery.get("split_size"));
             }
             String[] parts = urlParts[0].split("/+");
             String[] credentialsAndKeyspace = parts[1].split("@");
@@ -512,7 +515,7 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
         }
         catch (Exception e)
         {
-            throw new IOException("Expected 'cassandra://[username:password@]<keyspace>/<columnfamily>[?slice_start=<start>&slice_end=<end>[&reversed=true][&limit=1][&allow_deletes=true][widerows=true][use_secondary=true]]': " + e.getMessage());
+            throw new IOException("Expected 'cassandra://[username:password@]<keyspace>/<columnfamily>[?slice_start=<start>&slice_end=<end>[&reversed=true][&limit=1][&allow_deletes=true][widerows=true][use_secondary=true][split_size=<size>]]': " + e.getMessage());
         }
     }
 
@@ -569,6 +572,9 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
     public void setLocation(String location, Job job) throws IOException
     {
         conf = job.getConfiguration();
+        
+        // don't combine mappers to a single mapper per node
+        conf.setBoolean("pig.noSplitCombination", true);
         setLocationFromUri(location);
 
         if (ConfigHelper.getInputSlicePredicate(conf) == null)
@@ -581,12 +587,14 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
             widerows = Boolean.valueOf(System.getenv(PIG_WIDEROW_INPUT));
         if (System.getenv(PIG_USE_SECONDARY) != null)
             usePartitionFilter = Boolean.valueOf(System.getenv(PIG_USE_SECONDARY));
-
         if (usePartitionFilter && getIndexExpressions() != null)
             ConfigHelper.setInputRange(conf, getIndexExpressions());
 
         if (username != null && password != null)
             ConfigHelper.setInputKeyspaceUserNameAndPassword(conf, username, password);
+        
+        if (splitSize > 0)
+            ConfigHelper.setInputSplitSize(conf, splitSize);
 
         ConfigHelper.setInputColumnFamily(conf, keyspace, column_family, widerows);
         setConnectionInformation();
