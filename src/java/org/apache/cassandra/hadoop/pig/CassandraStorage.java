@@ -77,7 +77,6 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
     public final static String PIG_ALLOW_DELETES = "PIG_ALLOW_DELETES";
     public final static String PIG_WIDEROW_INPUT = "PIG_WIDEROW_INPUT";
     public final static String PIG_USE_SECONDARY = "PIG_USE_SECONDARY";
-    public final static String PIG_INPUT_SPLIT_SIZE = "PIG_INPUT_SPLIT_SIZE";
 
     private final static String DEFAULT_INPUT_FORMAT = "org.apache.cassandra.hadoop.ColumnFamilyInputFormat";
     private final static String DEFAULT_OUTPUT_FORMAT = "org.apache.cassandra.hadoop.ColumnFamilyOutputFormat";
@@ -529,7 +528,7 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
         }
         catch (Exception e)
         {
-            throw new IOException("Expected 'cassandra://[username:password@]<keyspace>/<columnfamily>[?slice_start=<start>&slice_end=<end>[&reversed=true][&limit=1][&allow_deletes=true][widerows=true][use_secondary=true]]': " + e.getMessage());
+            throw new IOException("Expected 'cassandra://[username:password@]<keyspace>/<columnfamily>[?slice_start=<start>&slice_end=<end>[&reversed=true][&limit=1][&allow_deletes=true][widerows=true][use_secondary=true][split_size=<size>]]': " + e.getMessage());
         }
     }
 
@@ -601,18 +600,6 @@ public class CassandraStorage extends LoadFunc implements StoreFuncInterface, Lo
             widerows = Boolean.valueOf(System.getenv(PIG_WIDEROW_INPUT));
         if (System.getenv(PIG_USE_SECONDARY) != null)
             usePartitionFilter = Boolean.valueOf(System.getenv(PIG_USE_SECONDARY));
-        if (System.getenv(PIG_INPUT_SPLIT_SIZE) != null)
-        {
-            try
-            {
-                ConfigHelper.setInputSplitSize(conf, Integer.valueOf(System.getenv(PIG_INPUT_SPLIT_SIZE)));
-            }
-            catch(NumberFormatException e)
-            {
-                throw new RuntimeException("PIG_INPUT_SPLIT_SIZE is not a number", e);
-            }           
-        }
-
         if (usePartitionFilter && getIndexExpressions() != null)
             ConfigHelper.setInputRange(conf, getIndexExpressions());
 
