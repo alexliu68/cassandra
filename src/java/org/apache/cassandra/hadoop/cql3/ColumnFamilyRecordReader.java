@@ -511,7 +511,7 @@ public class ColumnFamilyRecordReader extends RecordReader<List<IColumn>, Map<By
                     result = result + "," + column;
                 first = false;
             }
-            return result;           
+            return result = null ? "" : result;           
         }
         
         /** compose the where clause */
